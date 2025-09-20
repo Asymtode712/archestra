@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { FULLY_QUALIFED_ARCHESTRA_MCP_TOOL_IDS, constructToolId } from '@constants';
 import ChatHistory from '@ui/components/Chat/ChatHistory';
 import ChatInput from '@ui/components/Chat/ChatInput';
 import EmptyChatState from '@ui/components/Chat/EmptyChatState';
@@ -9,16 +10,15 @@ import config from '@ui/config';
 import { useChatAgent } from '@ui/contexts/chat-agent-context';
 import { useSlashCommands } from '@ui/hooks/use-slash-commands';
 import { getSlashCommandSuggestions } from '@ui/lib/utils/slash-commands';
-import { useChatStore, useOllamaStore, useToolsStore } from '@ui/stores';
+import { useChatStore, useToolsStore } from '@ui/stores';
 
 export const Route = createFileRoute('/chat')({
   component: ChatPage,
 });
 
 function ChatPage() {
-  const { saveDraftMessage, getDraftMessage, clearDraftMessage, updateMessages } = useChatStore();
+  const { saveDraftMessage, getDraftMessage, clearDraftMessage, selectedModel, updateMessages } = useChatStore();
   const { setOnlyTools } = useToolsStore();
-  const { selectedModel } = useOllamaStore();
   const {
     messages,
     setMessages,
@@ -128,10 +128,15 @@ function ChatPage() {
     
     if (currentInput.trim() && currentChat) {
       let messageText = currentInput;
+
       if (hasTooManyTools) {
-        setOnlyTools(['archestra__list_available_tools', 'archestra__enable_tools', 'archestra__disable_tools']);
-        messageText = `You currently have only list_available_tools and enable_tools enabled. Follow these steps:\n1. Call list_available_tools to see all available tool IDs\n2. Call enable_tools with the specific tool IDs you need, for example: {"toolIds": ["filesystem__read_file", "filesystem__write_file"]}\n3. After enabling the necessary tools, disable Archestra tools using disable_tools.\n4. After, proceed with this task: \n\n${currentInput}`;
+        const { LIST_AVAILABLE_TOOLS, ENABLE_TOOLS, DISABLE_TOOLS } = FULLY_QUALIFED_ARCHESTRA_MCP_TOOL_IDS;
+
+        setOnlyTools([LIST_AVAILABLE_TOOLS, ENABLE_TOOLS, DISABLE_TOOLS]);
+
+        messageText = `You currently have only ${LIST_AVAILABLE_TOOLS}, ${ENABLE_TOOLS}, ${DISABLE_TOOLS} enabled. Follow these steps:\n1. Call ${LIST_AVAILABLE_TOOLS} to see all available tool IDs\n2. Call ${ENABLE_TOOLS} with the specific tool IDs you need, for example: {"toolIds": ["${constructToolId('filesystem', 'read_file')}", "${constructToolId('filesystem', 'write_file')}", "${constructToolId('remote-mcp', 'search_repositories')}"}}\n3. After enabling the necessary tools, disable Archestra tools using ${DISABLE_TOOLS}.\n4. After, proceed with this task: \n\n${currentInput}`;
       }
+
       setIsSubmitting(true);
       sendMessage({ text: messageText });
       clearDraftMessage(currentChat.id);
