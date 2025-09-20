@@ -28,8 +28,6 @@ export function useSlashCommands({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
   const [inputRect, setInputRect] = useState<DOMRect | undefined>();
-
-
   const handleClearChat = useCallback(async () => {
     if (!currentChat) return;
 
