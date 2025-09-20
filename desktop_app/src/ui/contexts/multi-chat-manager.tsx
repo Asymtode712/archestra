@@ -280,23 +280,26 @@ function ChatInstanceManager({
   const prevStatusRef = useRef<string>(null);
   const prevLoadingRef = useRef<boolean>(null);
   const prevSubmittingRef = useRef<boolean>(null);
+  const prevMessagesLengthRef = useRef<number>(messages.length);
   const hasNotified = useRef(false);
 
   useEffect(() => {
     const statusChanged = prevStatusRef.current !== status;
     const loadingChanged = prevLoadingRef.current !== isLoading;
     const submittingChanged = prevSubmittingRef.current !== isSubmitting;
+    const messagesLengthChanged = prevMessagesLengthRef.current !== messages.length;
     const isFirstTime = !hasNotified.current;
 
-    if (isFirstTime || statusChanged || loadingChanged || submittingChanged) {
+    if (isFirstTime || statusChanged || loadingChanged || submittingChanged || messagesLengthChanged) {
       prevStatusRef.current = status;
       prevLoadingRef.current = isLoading;
       prevSubmittingRef.current = isSubmitting;
+      prevMessagesLengthRef.current = messages.length;
       hasNotified.current = true;
 
       onInstanceCreated(instance);
     }
-  }, [status, isLoading, isSubmitting, instance, onInstanceCreated]);
+  }, [status, isLoading, isSubmitting, messages.length, instance, onInstanceCreated]);
 
   // This component doesn't render anything
   return null;

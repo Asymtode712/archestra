@@ -2,8 +2,9 @@
 
 import { Link } from '@tanstack/react-router';
 import { AlertCircle, FileText, Loader2, RefreshCw, X } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { SlashCommandDropdown } from '@ui/components/Chat/SlashCommandDropdown';
 import ChatTokenUsage from '@ui/components/ChatTokenUsage';
 import { ToolHoverCard } from '@ui/components/ToolHoverCard';
 import {
@@ -20,6 +21,7 @@ import {
   AIInputTools,
 } from '@ui/components/kibo/ai-input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@ui/components/ui/tooltip';
+import { isCompleteSlashCommand } from '@ui/lib/utils/slash-commands';
 import { cn } from '@ui/lib/utils/tailwind';
 import { formatToolName } from '@ui/lib/utils/tools';
 import {
@@ -48,6 +50,14 @@ interface ChatInputProps {
   onRerunAgent?: () => void;
   status?: 'submitted' | 'streaming' | 'ready' | 'error';
   isSubmitting?: boolean;
+  onSlashCommand?: (command: string) => boolean;
+  onInputUpdate?: (input: string, textareaRef?: HTMLTextAreaElement) => void;
+  slashCommandSuggestions?: Array<{command: string; description: string}>;
+  showSlashCommandSuggestions?: boolean;
+  selectedSlashCommandIndex?: number;
+  onSlashCommandSelect?: (command: string) => void;
+  onHideSlashCommandSuggestions?: () => void;
+  onSelectedSlashCommandIndexChange?: (index: number) => void;
 }
 
 const PLACEHOLDER_EXAMPLES = [
@@ -76,6 +86,14 @@ export default function ChatInput({
   onRerunAgent,
   status = 'ready',
   isSubmitting = false,
+  onSlashCommand,
+  onInputUpdate,
+  slashCommandSuggestions = [],
+  showSlashCommandSuggestions = false,
+  selectedSlashCommandIndex = 0,
+  onSlashCommandSelect,
+  onHideSlashCommandSuggestions,
+  onSelectedSlashCommandIndexChange,
 }: ChatInputProps) {
   const { isDeveloperMode, toggleDeveloperMode } = useDeveloperModeStore();
   const { selectedModel, setSelectedModel } = useOllamaStore();
@@ -86,6 +104,8 @@ export default function ChatInput({
 
   // Rotating placeholder state
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Rotate placeholder every 7 seconds
   useEffect(() => {
@@ -101,17 +121,79 @@ export default function ChatInput({
   const currentModel = !selectedModel || selectedModel === '' ? undefined : selectedModel;
   const handleModelChange = setSelectedModel;
 
+  const handleInputChangeWithSlashCommands = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      handleInputChange(e);
+
+      if (onInputUpdate && textareaRef.current) {
+        onInputUpdate(e.target.value, textareaRef.current);
+      }
+    },
+    [handleInputChange, onInputUpdate]
+  );
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (showSlashCommandSuggestions && slashCommandSuggestions.length > 0) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const newIndex = selectedSlashCommandIndex < slashCommandSuggestions.length - 1 
+            ? selectedSlashCommandIndex + 1 
+            : 0;
+          onSelectedSlashCommandIndexChange?.(newIndex);
+          return;
+        }
+        
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const newIndex = selectedSlashCommandIndex > 0 
+            ? selectedSlashCommandIndex - 1 
+            : slashCommandSuggestions.length - 1;
+          onSelectedSlashCommandIndexChange?.(newIndex);
+          return;
+        }
+        
+        if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
+          e.preventDefault();
+          const selectedCommand = slashCommandSuggestions[selectedSlashCommandIndex];
+          if (selectedCommand && onSlashCommandSelect) {
+            onSlashCommandSelect(selectedCommand.command);
+          }
+          return;
+        }
+        
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          onHideSlashCommandSuggestions?.();
+          return;
+        }
+      }
+      
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
+
+        if (onSlashCommand && onSlashCommand(input)) {
+          return;
+        }
+        
         // Only submit if a model is selected and not disabled
         if (!disabled) {
           handleSubmit();
         }
       }
     },
-    [handleSubmit, disabled]
+    [
+      handleSubmit, 
+      disabled, 
+      input, 
+      onSlashCommand, 
+      showSlashCommandSuggestions, 
+      slashCommandSuggestions, 
+      selectedSlashCommandIndex, 
+      onSlashCommandSelect, 
+      onHideSlashCommandSuggestions,
+      onSelectedSlashCommandIndexChange
+    ]
   );
 
   // Helper function to find common prefix
@@ -534,15 +616,27 @@ export default function ChatInput({
           </div>
         )}
         <div className="relative">
+          <SlashCommandDropdown
+            suggestions={slashCommandSuggestions}
+            selectedIndex={selectedSlashCommandIndex}
+            onSelect={onSlashCommandSelect || (() => {})}
+            visible={showSlashCommandSuggestions}
+            inputRect={textareaRef.current?.getBoundingClientRect()}
+          />
+          
           <AIInputTextarea
+            ref={textareaRef}
             value={input}
-            onChange={handleInputChange}
+            onChange={handleInputChangeWithSlashCommands}
             onKeyDown={handleKeyDown}
             placeholder=""
             disabled={false}
             minHeight={48}
             maxHeight={164}
-            className="relative z-10"
+            className={cn(
+              "relative z-10",
+              isCompleteSlashCommand(input) && "border-green-500 bg-green-50/50 dark:bg-green-950/20"
+            )}
           />
           {!input && !hasMessages && (
             <div className="absolute inset-0 flex items-start pointer-events-none overflow-hidden">

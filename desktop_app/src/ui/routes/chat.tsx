@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import ChatHistory from '@ui/components/Chat/ChatHistory';
 import ChatInput from '@ui/components/Chat/ChatInput';
@@ -7,6 +7,8 @@ import EmptyChatState from '@ui/components/Chat/EmptyChatState';
 import SystemPrompt from '@ui/components/Chat/SystemPrompt';
 import config from '@ui/config';
 import { useChatAgent } from '@ui/contexts/chat-agent-context';
+import { useSlashCommands } from '@ui/hooks/use-slash-commands';
+import { getSlashCommandSuggestions } from '@ui/lib/utils/slash-commands';
 import { useChatStore, useOllamaStore, useToolsStore } from '@ui/stores';
 
 export const Route = createFileRoute('/chat')({
@@ -14,7 +16,7 @@ export const Route = createFileRoute('/chat')({
 });
 
 function ChatPage() {
-  const { saveDraftMessage, getDraftMessage, clearDraftMessage } = useChatStore();
+  const { saveDraftMessage, getDraftMessage, clearDraftMessage, updateMessages } = useChatStore();
   const { setOnlyTools } = useToolsStore();
   const { selectedModel } = useOllamaStore();
   const {
@@ -43,6 +45,20 @@ function ChatPage() {
   // Get current input from draft messages
   const currentInput = currentChat ? getDraftMessage(currentChat.id) : '';
 
+  const [slashCommandSuggestions, setSlashCommandSuggestions] = useState<Array<{command: string; description: string}>>([]);
+  const [showSlashCommandSuggestions, setShowSlashCommandSuggestions] = useState(false);
+  const [selectedSlashCommandIndex, setSelectedSlashCommandIndex] = useState(0);
+
+  const slashCommands = useSlashCommands({
+    messages,
+    setMessages,
+    sendMessage,
+    currentChat,
+    clearDraftMessage,
+    updateMessages,
+    setIsSubmitting,
+  });
+
   // Simple debounce implementation
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const debouncedSaveDraft = useCallback((chatId: number, content: string) => {
@@ -70,9 +86,46 @@ function ChatPage() {
     }
   };
 
+  const handleSlashCommand = useCallback((command: string): boolean => {
+    return slashCommands.processInput(command);
+  }, [slashCommands]);
+
+  const handleInputUpdate = useCallback((input: string, textareaRef?: HTMLTextAreaElement) => {
+    const suggestions = getSlashCommandSuggestions(input);
+    setSlashCommandSuggestions(suggestions);
+    setShowSlashCommandSuggestions(suggestions.length > 0);
+    if (suggestions.length > 0) {
+      setSelectedSlashCommandIndex(0);
+    }
+  }, []);
+
+  const handleSlashCommandSelect = useCallback((command: string) => {
+    if (currentChat) {
+      saveDraftMessage(currentChat.id, command);
+    }
+    setShowSlashCommandSuggestions(false);
+    setSlashCommandSuggestions([]);
+    setSelectedSlashCommandIndex(0);
+  }, [currentChat, saveDraftMessage]);
+
+  const handleHideSlashCommandSuggestions = useCallback(() => {
+    setShowSlashCommandSuggestions(false);
+    setSlashCommandSuggestions([]);
+    setSelectedSlashCommandIndex(0);
+  }, []);
+
   const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
     if (isSubmittingDisabled) return;
+
+    if (handleSlashCommand(currentInput.trim())) {
+
+      if (currentChat) {
+        clearDraftMessage(currentChat.id);
+      }
+      return;
+    }
+    
     if (currentInput.trim() && currentChat) {
       let messageText = currentInput;
       if (hasTooManyTools) {
@@ -187,6 +240,14 @@ function ChatPage() {
           onRerunAgent={handleRerunAgent}
           rerunAgentDisabled={isLoading || isSubmitting}
           isSubmitting={isSubmitting}
+          onSlashCommand={handleSlashCommand}
+          onInputUpdate={handleInputUpdate}
+          slashCommandSuggestions={slashCommandSuggestions}
+          showSlashCommandSuggestions={showSlashCommandSuggestions}
+          selectedSlashCommandIndex={selectedSlashCommandIndex}
+          onSlashCommandSelect={handleSlashCommandSelect}
+          onHideSlashCommandSuggestions={handleHideSlashCommandSuggestions}
+          onSelectedSlashCommandIndexChange={setSelectedSlashCommandIndex}
         />
       </div>
     </div>
