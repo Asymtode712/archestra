@@ -119,7 +119,6 @@ function ChatPage() {
     if (isSubmittingDisabled) return;
 
     if (handleSlashCommand(currentInput.trim())) {
-
       if (currentChat) {
         clearDraftMessage(currentChat.id);
       }
