@@ -117,7 +117,6 @@ export default function ChatInput({
     return () => clearInterval(interval);
   }, []);
 
-
   const handleInputChangeWithSlashCommands = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       handleInputChange(e);
