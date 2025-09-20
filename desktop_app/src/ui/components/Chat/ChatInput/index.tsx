@@ -613,6 +613,23 @@ export default function ChatInput({
             visible={showSlashCommandSuggestions}
             inputRect={textareaRef.current?.getBoundingClientRect()}
           />
+          {isCompleteSlashCommand(input) && (
+            <div 
+              className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
+              style={{
+                fontSize: 'inherit',
+                fontFamily: 'inherit',
+                lineHeight: 'inherit',
+                padding: '0.75rem 1rem',
+                whiteSpace: 'pre-wrap',
+                wordWrap: 'break-word',
+              }}
+            >
+              <span className="bg-orange-200/60 dark:bg-orange-800/40 -mx-2 px-1 py-0.5 rounded text-transparent">
+                {input.trim()}
+              </span>
+            </div>
+          )}
           
           <AIInputTextarea
             ref={textareaRef}
@@ -623,10 +640,7 @@ export default function ChatInput({
             disabled={false}
             minHeight={48}
             maxHeight={164}
-            className={cn(
-              "relative z-10",
-              isCompleteSlashCommand(input) && "border-green-500 bg-green-50/50 dark:bg-green-950/20"
-            )}
+            className="relative z-10 bg-transparent"
           />
           {!input && !hasMessages && (
             <div className="absolute inset-0 flex items-start pointer-events-none overflow-hidden">
