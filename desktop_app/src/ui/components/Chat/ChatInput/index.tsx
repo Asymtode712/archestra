@@ -7,7 +7,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { deconstructToolId } from '@constants';
 import { SlashCommandDropdown } from '@ui/components/Chat/SlashCommandDropdown';
 import ChatTokenUsage from '@ui/components/ChatTokenUsage';
-import { ToolHoverCard } from '@ui/components/ToolHoverCard';
 import {
   AIInput,
   AIInputButton,
@@ -21,8 +20,9 @@ import {
   AIInputToolbar,
   AIInputTools,
 } from '@ui/components/kibo/ai-input';
+import { ToolHoverCard } from '@ui/components/ToolHoverCard';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@ui/components/ui/tooltip';
-import { isCompleteSlashCommand } from '@ui/lib/utils/slash-commands';
+import { isCompleteSlashCommand, SlashCommand } from '@ui/lib/utils/slash-commands';
 import { cn } from '@ui/lib/utils/tailwind';
 import { formatToolName } from '@ui/lib/utils/tools';
 import {
@@ -53,10 +53,10 @@ interface ChatInputProps {
   isSubmitting?: boolean;
   onSlashCommand?: (command: string) => boolean;
   onInputUpdate?: (input: string, textareaRef?: HTMLTextAreaElement) => void;
-  slashCommandSuggestions?: Array<{command: string; description: string}>;
+  slashCommandSuggestions?: Array<{command: SlashCommand; description: string}>;
   showSlashCommandSuggestions?: boolean;
   selectedSlashCommandIndex?: number;
-  onSlashCommandSelect?: (command: string) => void;
+  onSlashCommandSelect?: (command: SlashCommand) => void;
   onHideSlashCommandSuggestions?: () => void;
   onSelectedSlashCommandIndexChange?: (index: number) => void;
 }
@@ -625,7 +625,7 @@ export default function ChatInput({
                 wordWrap: 'break-word',
               }}
             >
-              <span className="bg-orange-200/60 dark:bg-orange-800/40 -mx-2 px-1 py-0.5 rounded text-transparent">
+              <span className="bg-orange-400/40 dark:bg-orange-800/40 -mx-2 px-1 py-0.5 rounded text-transparent">
                 {input.trim()}
               </span>
             </div>

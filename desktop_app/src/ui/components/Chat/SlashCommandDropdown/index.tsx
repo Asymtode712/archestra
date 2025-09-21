@@ -1,26 +1,27 @@
 import { Command, Hash, Zap } from 'lucide-react';
 import React from 'react';
 
+import { SlashCommand } from '@ui/lib/utils/slash-commands';
 import { cn } from '@ui/lib/utils/tailwind';
 
 interface SlashCommandSuggestion {
-  command: string;
+  command: SlashCommand;
   description: string;
 }
 
 interface SlashCommandDropdownProps {
   suggestions: SlashCommandSuggestion[];
   selectedIndex: number;
-  onSelect: (command: string) => void;
+  onSelect: (command: SlashCommand) => void;
   visible: boolean;
   inputRect?: DOMRect;
 }
 
-const getCommandIcon = (command: string) => {
+const getCommandIcon = (command: SlashCommand) => {
   switch (command) {
-    case '/clear':
+    case SlashCommand.CLEAR:
       return <Hash className="w-4 h-4" />;
-    case '/compact':
+    case SlashCommand.COMPACT:
       return <Zap className="w-4 h-4" />;
     default:
       return <Command className="w-4 h-4" />;

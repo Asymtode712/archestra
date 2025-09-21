@@ -1,28 +1,33 @@
-export interface SlashCommand {
-  command: string;
+export enum SlashCommand {
+  CLEAR = '/clear',
+  COMPACT = '/compact',
+}
+
+export interface SlashCommandConfig {
+  command: SlashCommand;
   description: string;
-  handler: () => Promise<void> | void;
+  handler?: () => Promise<void> | void;
 }
 
 export interface SlashCommandsConfig {
-  clear: SlashCommand;
-  compact: SlashCommand;
+  clear: SlashCommandConfig;
+  compact: SlashCommandConfig;
 }
 
 export interface SlashCommandParseResult {
   isSlashCommand: boolean;
-  command?: string;
+  command?: SlashCommand;
   fullCommand?: string;
   isValidCommand: boolean;
 }
 
 export const AVAILABLE_SLASH_COMMANDS = {
   clear: {
-    command: '/clear',
+    command: SlashCommand.CLEAR,
     description: 'Clear the current chat and start a new conversation',
   },
   compact: {
-    command: '/compact',
+    command: SlashCommand.COMPACT,
     description: 'Summarize the conversation and continue with compacted context',
   },
 } as const;
@@ -38,11 +43,11 @@ export function parseSlashCommand(input: string): SlashCommandParseResult {
   }
 
   const fullCommand = trimmedInput;
-  const command = trimmedInput.split(' ')[0]; 
+  const commandStr = trimmedInput.split(' ')[0]; 
   
-  const isValidCommand = Object.values(AVAILABLE_SLASH_COMMANDS).some(
-    cmd => cmd.command === command
-  );
+  // Check if the command string matches any of our enum values
+  const command = Object.values(SlashCommand).find(cmd => cmd === commandStr);
+  const isValidCommand = command !== undefined;
   
   return {
     isSlashCommand: true,
@@ -52,7 +57,7 @@ export function parseSlashCommand(input: string): SlashCommandParseResult {
   };
 }
 
-export function getSlashCommandSuggestions(input: string): Array<{command: string; description: string}> {
+export function getSlashCommandSuggestions(input: string): Array<{command: SlashCommand; description: string}> {
   const trimmedInput = input.trim().toLowerCase();
   
   if (!trimmedInput.startsWith('/')) {

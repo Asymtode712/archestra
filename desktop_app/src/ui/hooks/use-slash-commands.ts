@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import config from '@ui/config';
 import { deleteChatMessage } from '@ui/lib/clients/archestra/api/gen';
 
-import { getSlashCommandSuggestions, parseSlashCommand } from '@ui/lib/utils/slash-commands';
+import { getSlashCommandSuggestions, parseSlashCommand, SlashCommand } from '@ui/lib/utils/slash-commands';
 
 interface UseSlashCommandsProps {
   messages: UIMessage[];
@@ -74,12 +74,12 @@ export function useSlashCommands({
     clearDraftMessage(currentChat.id);
   }, [currentChat, messages, sendMessage, clearDraftMessage, setIsSubmitting]);
 
-  const handleSlashCommand = useCallback((command: string) => {
+  const handleSlashCommand = useCallback((command: SlashCommand) => {
     switch (command) {
-      case '/clear':
+      case SlashCommand.CLEAR:
         void handleClearChat();
         break;
-      case '/compact':
+      case SlashCommand.COMPACT:
         handleCompactChat();
         break;
       default:
@@ -116,7 +116,7 @@ export function useSlashCommands({
     return suggestions;
   }, []);
 
-  const selectSuggestion = useCallback((index: number, suggestions: Array<{command: string; description: string}>) => {
+  const selectSuggestion = useCallback((index: number, suggestions: Array<{command: SlashCommand; description: string}>) => {
     if (index >= 0 && index < suggestions.length) {
       return suggestions[index].command;
     }

@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
-import { FULLY_QUALIFED_ARCHESTRA_MCP_TOOL_IDS, constructToolId } from '@constants';
+import { constructToolId, FULLY_QUALIFED_ARCHESTRA_MCP_TOOL_IDS } from '@constants';
 import ChatHistory from '@ui/components/Chat/ChatHistory';
 import ChatInput from '@ui/components/Chat/ChatInput';
 import EmptyChatState from '@ui/components/Chat/EmptyChatState';
@@ -9,7 +9,7 @@ import SystemPrompt from '@ui/components/Chat/SystemPrompt';
 import config from '@ui/config';
 import { useChatAgent } from '@ui/contexts/chat-agent-context';
 import { useSlashCommands } from '@ui/hooks/use-slash-commands';
-import { getSlashCommandSuggestions } from '@ui/lib/utils/slash-commands';
+import { getSlashCommandSuggestions, SlashCommand } from '@ui/lib/utils/slash-commands';
 import { useChatStore, useToolsStore } from '@ui/stores';
 
 export const Route = createFileRoute('/chat')({
@@ -45,7 +45,7 @@ function ChatPage() {
   // Get current input from draft messages
   const currentInput = currentChat ? getDraftMessage(currentChat.id) : '';
 
-  const [slashCommandSuggestions, setSlashCommandSuggestions] = useState<Array<{command: string; description: string}>>([]);
+  const [slashCommandSuggestions, setSlashCommandSuggestions] = useState<Array<{command: SlashCommand; description: string}>>([]);
   const [showSlashCommandSuggestions, setShowSlashCommandSuggestions] = useState(false);
   const [selectedSlashCommandIndex, setSelectedSlashCommandIndex] = useState(0);
 
@@ -59,30 +59,12 @@ function ChatPage() {
     setIsSubmitting,
   });
 
-  // Simple debounce implementation
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  const debouncedSaveDraft = useCallback((chatId: number, content: string) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      // This could be used for future persistence to localStorage or server
-      console.log('Debounced save draft:', { chatId, contentLength: content.length });
-    }, 500);
-  }, []);
 
-  // Cleanup timeout on unmount to prevent memory leak
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-    };
-  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     if (currentChat) {
       saveDraftMessage(currentChat.id, newValue);
-      debouncedSaveDraft(currentChat.id, newValue);
     }
   };
 
@@ -99,7 +81,7 @@ function ChatPage() {
     }
   }, []);
 
-  const handleSlashCommandSelect = useCallback((command: string) => {
+  const handleSlashCommandSelect = useCallback((command: SlashCommand) => {
     if (currentChat) {
       saveDraftMessage(currentChat.id, command);
     }
