@@ -9,11 +9,6 @@ export interface SlashCommandConfig {
   handler?: () => Promise<void> | void;
 }
 
-export interface SlashCommandsConfig {
-  clear: SlashCommandConfig;
-  compact: SlashCommandConfig;
-}
-
 export interface SlashCommandParseResult {
   isSlashCommand: boolean;
   command?: SlashCommand;
@@ -21,16 +16,16 @@ export interface SlashCommandParseResult {
   isValidCommand: boolean;
 }
 
-export const AVAILABLE_SLASH_COMMANDS = {
-  clear: {
+export const AVAILABLE_SLASH_COMMANDS = [
+  {
     command: SlashCommand.CLEAR,
     description: 'Clear the current chat and start a new conversation',
   },
-  compact: {
+  {
     command: SlashCommand.COMPACT,
     description: 'Summarize the conversation and continue with compacted context',
   },
-} as const;
+] as const;
 
 export function parseSlashCommand(input: string): SlashCommandParseResult {
   const trimmedInput = input.trim();
@@ -57,7 +52,7 @@ export function parseSlashCommand(input: string): SlashCommandParseResult {
   };
 }
 
-export function getSlashCommandSuggestions(input: string): Array<{command: SlashCommand; description: string}> {
+export function getSlashCommandSuggestions(input: string): ReadonlyArray<{readonly command: SlashCommand; readonly description: string}> {
   const trimmedInput = input.trim().toLowerCase();
   
   if (!trimmedInput.startsWith('/')) {
@@ -65,15 +60,15 @@ export function getSlashCommandSuggestions(input: string): Array<{command: Slash
   }
   
   if (trimmedInput === '/') {
-    return Object.values(AVAILABLE_SLASH_COMMANDS);
+    return AVAILABLE_SLASH_COMMANDS;
   }
   
-  return Object.values(AVAILABLE_SLASH_COMMANDS).filter(cmd => 
+  return AVAILABLE_SLASH_COMMANDS.filter(cmd => 
     cmd.command.toLowerCase().startsWith(trimmedInput)
   );
 }
 
 export function isCompleteSlashCommand(input: string): boolean {
   const trimmed = input.trim();
-  return Object.values(AVAILABLE_SLASH_COMMANDS).some(cmd => cmd.command === trimmed);
+  return AVAILABLE_SLASH_COMMANDS.some(cmd => cmd.command === trimmed);
 }
