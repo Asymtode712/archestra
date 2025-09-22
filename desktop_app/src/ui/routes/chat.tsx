@@ -10,6 +10,7 @@ import config from '@ui/config';
 import { useChatAgent } from '@ui/contexts/chat-agent-context';
 import { useSlashCommands } from '@ui/hooks/use-slash-commands';
 import { getSlashCommandSuggestions, SlashCommand } from '@ui/lib/utils/slash-commands';
+import { resetChatTokenUsage } from '@ui/lib/clients/archestra/api/gen';
 import { useChatStore, useToolsStore } from '@ui/stores';
 
 export const Route = createFileRoute('/chat')({
@@ -131,7 +132,7 @@ function ChatPage() {
 
   const handleRerunAgent = async () => {
     const firstUserMessage = messages.find((msg) => msg.role === 'user');
-    if (!firstUserMessage) return;
+    if (!firstUserMessage || !currentChat) return;
 
     // Extract text from message.parts for rerun logic
     let messageText = '';
@@ -142,6 +143,16 @@ function ChatPage() {
       }
     }
     if (!messageText) return;
+
+    // Reset token usage for this chat session
+    try {
+      await resetChatTokenUsage({
+        path: { sessionId: currentChat.sessionId },
+      });
+    } catch (error) {
+      console.error('Failed to reset token usage:', error);
+      // Continue with restart even if token reset fails
+    }
 
     // Clear all messages except memories (system message)
     const memoriesMessage = messages.find((msg) => msg.id === config.chat.systemMemoriesMessageId);
