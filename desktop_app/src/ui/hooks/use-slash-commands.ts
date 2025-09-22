@@ -2,7 +2,7 @@ import { UIMessage } from 'ai';
 import { useCallback, useState } from 'react';
 
 import config from '@ui/config';
-import { deleteChatMessage } from '@ui/lib/clients/archestra/api/gen';
+import { deleteChatMessage, resetChatTokenUsage } from '@ui/lib/clients/archestra/api/gen';
 
 import { getSlashCommandSuggestions, parseSlashCommand, SlashCommand } from '@ui/lib/utils/slash-commands';
 
@@ -10,7 +10,7 @@ interface UseSlashCommandsProps {
   messages: UIMessage[];
   setMessages: (messages: UIMessage[]) => void;
   sendMessage: (message: { text: string }) => void;
-  currentChat?: { id: number } | null;
+  currentChat?: { id: number; sessionId: string } | null;
   clearDraftMessage: (chatId: number) => void;
   updateMessages: (chatId: number, messages: UIMessage[]) => void;
   setIsSubmitting?: (b: boolean) => void;
@@ -38,6 +38,16 @@ export function useSlashCommands({
     if (nonSystemMessages.length === 0) {
       console.error('[SlashCommands] /clear ignored: no conversation to clear');
       return;
+    }
+
+    // Reset token usage for this chat session
+    try {
+      await resetChatTokenUsage({
+        path: { sessionId: currentChat.sessionId },
+      });
+    } catch (error) {
+      console.error('Failed to reset token usage during /clear:', error);
+      // Continue with clear even if token reset fails
     }
 
     const newMessages: UIMessage[] = systemMessage ? [systemMessage] : [];
