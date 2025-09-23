@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
+import { type ChatStatus } from 'ai';
 
 import { constructToolId, FULLY_QUALIFED_ARCHESTRA_MCP_TOOL_IDS } from '@constants';
 import ChatHistory from '@ui/components/Chat/ChatHistory';
@@ -25,6 +26,7 @@ function ChatPage() {
     setMessages,
     sendMessage,
     stop,
+    status,
     isLoading,
     isSubmitting,
     setIsSubmitting,
@@ -245,6 +247,7 @@ function ChatPage() {
           onSlashCommandSelect={handleSlashCommandSelect}
           onHideSlashCommandSuggestions={handleHideSlashCommandSuggestions}
           onSelectedSlashCommandIndexChange={setSelectedSlashCommandIndex}
+          status={status as ChatStatus}
         />
       </div>
     </div>
